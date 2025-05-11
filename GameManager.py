@@ -17,9 +17,9 @@ PLAYER_INITIATION_COOLDOWN_HOURS = 0
 # 最小押注点数
 MIN_BET_AMOUNT = 1
 # 最大押注点数
-MAX_BET_AMOUNT = 3
+MAX_BET_AMOUNT = 5
 # 默认子弹数
-DEFAULT_BULLET_COUNT = 6
+DEFAULT_BULLET_COUNT = 4
 
 
 class GameManager:
@@ -223,7 +223,7 @@ class GameManager:
             end_game_result = self._end_game(hit_player_id=user_id)
             return {
                 "success": True,
-                "message": f"💥 BOOM! 玩家 {user_id} 不幸中弹！\n{end_game_result['summary']}",
+                "message": f"�� BOOM! 玩家 {user_id} (押注 {bet_amount} 点) 不幸中弹！\n{end_game_result['summary']}",
                 "game_over": True,
                 "hit": True,
                 "details": end_game_result,
@@ -236,7 +236,7 @@ class GameManager:
                 end_game_result = self._end_game(hit_player_id=None)  # 无人中弹
                 return {
                     "success": True,
-                    "message": f"🎉 咔！是空枪！所有子弹均已安全射出！\n{end_game_result['summary']}",
+                    "message": f"🎉 咔！是空枪！所有子弹均已安全射出！玩家 {user_id} (押注 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
                     "game_over": True,
                     "hit": False,
                     "details": end_game_result,
@@ -250,7 +250,7 @@ class GameManager:
                 probability_percentage = next_shot_probability * 100
                 return {
                     "success": True,
-                    "message": f"咔！是空枪！玩家 {user_id} 安全。\n还有 {remaining_shots_display} 发子弹，下一位请开枪！\n下一枪中弹概率：{probability_percentage:.1f}%",
+                    "message": f"咔！是空枪！玩家 {user_id} (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 发子弹，下一位请开枪！\n下一枪中弹概率：{probability_percentage:.1f}%",
                     "game_over": False,
                     "hit": False,
                 }
