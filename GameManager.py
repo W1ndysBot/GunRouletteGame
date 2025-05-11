@@ -223,7 +223,7 @@ class GameManager:
             end_game_result = self._end_game(hit_player_id=user_id)
             return {
                 "success": True,
-                "message": f"�� BOOM! 玩家 {user_id} (押注 {bet_amount} 点) 不幸中弹！\n{end_game_result['summary']}",
+                "message": f"💥 BOOM! 玩家 {user_id} (押注 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
                 "game_over": True,
                 "hit": True,
                 "details": end_game_result,
