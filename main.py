@@ -16,6 +16,10 @@ from app.api import send_group_msg, send_private_msg
 from app.switch import load_switch, save_switch
 from app.scripts.GunRouletteGame.menu import Menu
 from app.scripts.GunRouletteGame.GameManager import GameManager
+from app.scripts.GunRouletteGame.commands import (
+    handle_roulette_menu,
+    handle_start_roulette_game,
+)
 
 # 数据存储路径，实际开发时，请将GunRouletteGame替换为具体的数据存放路径
 DATA_DIR = os.path.join(
@@ -80,43 +84,13 @@ async def handle_group_message(websocket, msg):
         # 检查功能是否开启
         if load_function_status(group_id):
             if raw_message.lower() == "轮盘菜单":
-                await send_group_msg(websocket, group_id, Menu().get_menu())
+                await handle_roulette_menu(websocket, group_id, message_id)
                 return
             # 处理卷卷轮盘命令
             if raw_message.startswith("卷卷轮盘"):
-                try:
-                    if len(raw_message.split(" ")) > 1 and raw_message.split(" ")[1]:
-                        bullet_count = int(raw_message.split(" ")[1])
-                except ValueError:
-                    await send_group_msg(
-                        websocket,
-                        group_id,
-                        f"[CQ:reply,id={message_id}]️️️无效的子弹数量，将使用默认值6颗。",
-                    )
-                    bullet_count = 6  # 重置为默认值
-
-                # 实例化GameManager
-                game_manager = GameManager(group_id, bullet_count)
-                game_result = game_manager.start_game()
-                if game_result and game_result.get("success") == True:
-                    await send_group_msg(
-                        websocket,
-                        group_id,
-                        f"[CQ:reply,id={message_id}]🔫🔫🔫卷卷轮盘游戏已开始，当前子弹数量为{bullet_count}颗，可以发送`卷卷开枪`命令参与游戏。",
-                    )
-                elif game_result:
-                    await send_group_msg(
-                        websocket,
-                        group_id,
-                        f"[CQ:reply,id={message_id}]🚫🚫🚫开启卷卷轮盘游戏失败，失败原因："
-                        + game_result.get("message", "未知错误"),
-                    )
-                else:
-                    await send_group_msg(
-                        websocket,
-                        group_id,
-                        f"[CQ:reply,id={message_id}]🚫🚫🚫开启卷卷轮盘游戏失败，无法获取游戏结果。",
-                    )
+                await handle_start_roulette_game(
+                    websocket, group_id, raw_message, message_id
+                )
                 return
     except Exception as e:
         logging.error(f"处理GunRouletteGame群消息失败: {e}")
