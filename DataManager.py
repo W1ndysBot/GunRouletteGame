@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+from datetime import datetime
 
 
 class DataManager:
@@ -11,92 +12,155 @@ class DataManager:
     """
 
     def __init__(self, group_id):
-        self.data_dir = os.path.join(
+        base_data_path = os.path.join(
             os.path.dirname(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             ),
             "data",
             "GunRouletteGame",
-            group_id,
         )
-        os.makedirs(self.data_dir, exist_ok=True)
-        self.group_id = group_id
-        self.game_status = self.get_game_status()
+        self.data_dir = os.path.join(base_data_path, str(group_id))
+        self.game_history_dir = os.path.join(self.data_dir, "game_history")
+        self.player_data_dir = os.path.join(self.data_dir, "player_data")
 
-    def get_game_status(self):
+        os.makedirs(self.data_dir, exist_ok=True)
+        os.makedirs(self.game_history_dir, exist_ok=True)
+        os.makedirs(self.player_data_dir, exist_ok=True)
+
+        self.group_id = str(group_id)
+        self.game_status = self._load_game_status()
+
+    def _load_game_status(self):
         """
-        获取游戏状态文件的内容
+        加载或初始化游戏状态文件。
         文件内容格式：
         {
-            "group_id": "group_id",  # 群ID
-            "game_count": 0,  # 当前群组今日已结束的游戏数量
-            "game_id": "unique_game_id",  # 当前游戏的唯一ID
-            "game_status": "running",  # 当前游戏状态
-            "game_start_time": "2021-01-01 00:00:00",  # 当前游戏开始时间
-            "game_initiator": "user_id",  # 当前游戏发起者
-            "bullet_count": 6,  # 当前游戏初始子弹数量
-            "bullet_position": 0,  # 当前游戏剩余子弹数量
+            "group_id": "str",              # 群ID
+            "daily_games_ended_count": 0, # 当前群组今日已结束的游戏数量
+            "last_game_end_date": "YYYY-MM-DD", # 上次游戏结束日期，用于重置每日计数
+            "current_game": null or {      # 当前游戏详情，null表示无游戏进行
+                "id": "unique_game_id",    # 当前游戏的唯一ID
+                "status": "running",       # 当前游戏状态 ("idle", "running")
+                "start_time": "iso_timestamp", # 当前游戏开始时间
+                "initiator_id": "user_id", # 当前游戏发起者
+                "bullet_count": 6,         # 当前游戏初始子弹数量 (总膛数)
+                "shots_fired_count": 0,    # 已开枪次数
+                "participants": {          # 参与者信息 {user_id: {"bet": int, "shot_order": int, "is_hit": bool}}
+                    # "player1_id": {"bet": 2, "shot_order": 0, "is_hit": False}
+                }
+            }
         }
         """
+        status_file = os.path.join(self.data_dir, "game_status.json")
         default_game_status = {
             "group_id": self.group_id,
-            "game_count": 0,
-            "game_id": None,
-            "game_status": "idle",
-            "game_start_time": None,
-            "game_initiator": None,
-            "bullet_count": 6,
-            "bullet_position": 0,
+            "daily_games_ended_count": 0,
+            "last_game_end_date": datetime.utcnow().strftime("%Y-%m-%d"),
+            "current_game": None,
         }
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
 
-        status_file = os.path.join(self.data_dir, "game_status.json")
         if os.path.exists(status_file):
             try:
                 with open(status_file, "r", encoding="utf-8") as f:
-                    self.game_status = json.load(f)
+                    loaded_status = json.load(f)
+                    # 可以在这里添加版本迁移或字段检查逻辑
+                    return loaded_status
             except (json.JSONDecodeError, FileNotFoundError):
-                # 如果文件解析失败，返回默认数据，并创建新的游戏状态文件
-                self.game_status = default_game_status
+                # 文件损坏或不存在，使用默认值并保存
                 with open(status_file, "w", encoding="utf-8") as f:
-                    json.dump(self.game_status, f)
+                    json.dump(default_game_status, f, ensure_ascii=False, indent=4)
+                return default_game_status
         else:
-            # 如果文件不存在，返回默认数据，并创建新的游戏状态文件
-            self.game_status = default_game_status
             with open(status_file, "w", encoding="utf-8") as f:
-                json.dump(self.game_status, f)
-
-        return self.game_status
+                json.dump(default_game_status, f, ensure_ascii=False, indent=4)
+            return default_game_status
 
     def save_game_status(self):
         """
-        保存游戏状态到文件
+        保存当前游戏状态到文件 game_status.json
         """
-        with open(
-            os.path.join(self.data_dir, "game_status.json"), "w", encoding="utf-8"
-        ) as f:
-            json.dump(self.game_status, f)
+        status_file = os.path.join(self.data_dir, "game_status.json")
+        with open(status_file, "w", encoding="utf-8") as f:
+            json.dump(self.game_status, f, ensure_ascii=False, indent=4)
 
-    def get_one_game_status(self, game_id):
+    def get_game_history(self, game_id):
         """
-        获取单个游戏状态
+        获取指定 game_id 的游戏历史记录。
         """
-        game_status_file = os.path.join(
-            self.data_dir, "game_history", f"{game_id}.json"
-        )
-        if os.path.exists(game_status_file):
-            with open(game_status_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+        history_file = os.path.join(self.game_history_dir, f"{game_id}.json")
+        if os.path.exists(history_file):
+            try:
+                with open(history_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                return None  # 文件损坏
         return None
 
-    def save_one_game_status(self, game_id, game_status):
+    def save_game_history(self, game_id, game_data):
         """
-        保存单个游戏状态到文件
+        保存单场游戏历史记录到 data_dir/群号/game_history/游戏ID.json
+        game_data 结构示例:
+        {
+            "game_id": "unique_game_id",
+            "group_id": "group_id",
+            "start_time": "iso_timestamp",
+            "end_time": "iso_timestamp",
+            "initiator_id": "user_id",
+            "bullet_count": 6,
+            "outcome": "player_hit" / "all_safe",
+            "hit_player_id": "user_id" / null,
+            "participants_log": { # user_id: {"bet": int, "score_change": int}
+                # "player1_id": {"bet": 2, "score_change": 12}
+            }
+        }
         """
-        with open(
-            os.path.join(self.data_dir, "game_history", f"{game_id}.json"),
-            "w",
-            encoding="utf-8",
-        ) as f:
-            json.dump(game_status, f)
+        history_file = os.path.join(self.game_history_dir, f"{game_id}.json")
+        with open(history_file, "w", encoding="utf-8") as f:
+            json.dump(game_data, f, ensure_ascii=False, indent=4)
+
+    def get_player_data(self, user_id):
+        """
+        获取指定玩家的数据 data_dir/群号/player_data/玩家QQ号.json
+        返回玩家数据字典，如果玩家文件不存在或解析失败，则返回默认玩家数据。
+        """
+        player_file = os.path.join(self.player_data_dir, f"{user_id}.json")
+        default_player_data = {
+            "user_id": str(user_id),
+            "total_score": 0,
+            "games_participated_ids": [],
+            "games_initiated_timestamps": [],  # 用于检查发起游戏频率
+        }
+        if os.path.exists(player_file):
+            try:
+                with open(player_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                # 文件损坏，返回默认数据，但不覆盖原文件，让save时重建
+                return default_player_data
+        return default_player_data
+
+    def save_player_data(self, user_id, player_data):
+        """
+        保存玩家数据到 data_dir/群号/player_data/玩家QQ号.json
+        """
+        player_file = os.path.join(self.player_data_dir, f"{user_id}.json")
+        with open(player_file, "w", encoding="utf-8") as f:
+            json.dump(player_data, f, ensure_ascii=False, indent=4)
+
+    # 辅助方法，可以在 GameManager 中调用
+    def update_player_score(self, user_id, score_change):
+        player_data = self.get_player_data(user_id)
+        player_data["total_score"] += score_change
+        self.save_player_data(user_id, player_data)
+
+    def record_player_game_participation(self, user_id, game_id):
+        player_data = self.get_player_data(user_id)
+        if game_id not in player_data["games_participated_ids"]:
+            player_data["games_participated_ids"].append(game_id)
+        self.save_player_data(user_id, player_data)
+
+    def record_player_game_initiation(self, user_id):
+        player_data = self.get_player_data(user_id)
+        player_data["games_initiated_timestamps"].append(datetime.utcnow().isoformat())
+        # 可以考虑限制列表长度，例如只保留最近N次记录
+        self.save_player_data(user_id, player_data)

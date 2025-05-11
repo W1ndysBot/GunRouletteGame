@@ -12,13 +12,15 @@ sys.path.append(
 )
 
 from app.config import *
-from app.api import send_group_msg, send_private_msg
+from app.api import send_group_msg, send_private_msg, owner_id
 from app.switch import load_switch, save_switch
 from app.scripts.GunRouletteGame.menu import Menu
 from app.scripts.GunRouletteGame.GameManager import GameManager
 from app.scripts.GunRouletteGame.commands import (
     handle_roulette_menu,
     handle_start_roulette_game,
+    handle_player_shoot,
+    handle_admin_end_game,
 )
 
 # 数据存储路径，实际开发时，请将GunRouletteGame替换为具体的数据存放路径
@@ -27,6 +29,16 @@ DATA_DIR = os.path.join(
     "data",
     "GunRouletteGame",
 )
+
+# 插件信息
+plugin_name = "GunRouletteGame"
+plugin_usage = """
+发送 `grg` 打开/关闭本群轮盘游戏功能。
+发送 `轮盘菜单` 查看游戏帮助。
+发送 `卷卷轮盘 [子弹数]` 开始一局游戏 (默认6颗子弹)。
+发送 `卷卷开枪 [押注点数]` 参与当前游戏 (默认1点, 范围1-3点)。
+管理员发送 `结束轮盘` 可以手动结束当前局。
+"""
 
 
 # 查看功能开关状态
@@ -40,29 +52,25 @@ def save_function_status(group_id, status):
 
 
 # 处理开关状态
-async def toggle_function_status(websocket, group_id, message_id, authorized):
-    if not authorized:
+async def toggle_function_status(websocket, group_id, message_id, authorized_user_flag):
+    """切换指定群组的功能开关状态"""
+    if not authorized_user_flag:  # 使用传入的标志
         await send_group_msg(
             websocket,
             group_id,
-            f"[CQ:reply,id={message_id}]❌❌❌你没有权限对GunRouletteGame功能进行操作,请联系管理员。",
+            f"[CQ:reply,id={message_id}]抱歉，您没有权限操作 {plugin_name} 功能开关。",
         )
         return
 
-    if load_function_status(group_id):
-        save_function_status(group_id, False)
-        await send_group_msg(
-            websocket,
-            group_id,
-            f"[CQ:reply,id={message_id}]🚫🚫🚫GunRouletteGame功能已关闭",
-        )
-    else:
-        save_function_status(group_id, True)
-        await send_group_msg(
-            websocket,
-            group_id,
-            f"[CQ:reply,id={message_id}]✅✅✅GunRouletteGame功能已开启",
-        )
+    current_status = load_function_status(group_id)
+    new_status = not current_status
+    save_function_status(group_id, new_status)
+    status_text = "开启" if new_status else "关闭"
+    await send_group_msg(
+        websocket,
+        group_id,
+        f"[CQ:reply,id={message_id}]{plugin_name} 功能已{status_text}。",
+    )
 
 
 # 群消息处理函数
@@ -73,25 +81,61 @@ async def handle_group_message(websocket, msg):
     try:
         user_id = str(msg.get("user_id"))
         group_id = str(msg.get("group_id"))
-        raw_message = str(msg.get("raw_message"))
+        raw_message = str(msg.get("raw_message", "")).strip()
         message_id = str(msg.get("message_id"))
-        authorized = user_id in owner_id
+        role = str(msg.get("sender", {}).get("role", "")).lower()  # 转小写以便比较
 
-        # 处理开关命令
-        if raw_message.lower() == "grg":
-            await toggle_function_status(websocket, group_id, message_id, authorized)
+        # 确保 user_id, group_id, message_id 存在
+        if not all([user_id, group_id, message_id]):
+            logging.warning(
+                f"[{plugin_name}] 缺少必要消息参数: user_id, group_id, or message_id."
+            )
             return
+
+        is_authorized_user = user_id in owner_id or role in ["admin", "owner"]
+
+        # 处理开关命令 (grg)
+        if raw_message.lower() == "grg":
+            # toggle_function_status 内部已经有权限判断，但这里提前判断也可以
+            # 为了统一，toggle_function_status 也应该接收 is_authorized_user
+            await toggle_function_status(
+                websocket, group_id, message_id, is_authorized_user
+            )
+            return
+
         # 检查功能是否开启
-        if load_function_status(group_id):
-            if raw_message.lower() == "轮盘菜单":
-                await handle_roulette_menu(websocket, group_id, message_id)
-                return
-            # 处理卷卷轮盘命令
-            if raw_message.startswith("卷卷轮盘"):
-                await handle_start_roulette_game(
-                    websocket, group_id, raw_message, message_id
+        if not load_function_status(group_id):
+            return
+
+        # 功能已开启，处理游戏相关命令
+        if raw_message.lower() == "轮盘菜单":
+            await handle_roulette_menu(websocket, group_id, message_id)
+            return
+
+        if raw_message.startswith("卷卷轮盘"):
+            await handle_start_roulette_game(
+                websocket, group_id, user_id, raw_message, message_id
+            )
+            return
+
+        if raw_message.startswith("卷卷开枪"):
+            await handle_player_shoot(
+                websocket, group_id, user_id, raw_message, message_id
+            )
+            return
+
+        # 新增：处理管理员结束游戏命令
+        if raw_message.lower() == "结束轮盘":
+            if is_authorized_user:
+                await handle_admin_end_game(websocket, group_id, message_id)
+            else:
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，您没有权限结束当前轮盘游戏。",
                 )
-                return
+            return
+
     except Exception as e:
         logging.error(f"处理GunRouletteGame群消息失败: {e}")
         await send_group_msg(
