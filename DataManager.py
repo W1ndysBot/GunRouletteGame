@@ -166,3 +166,31 @@ class DataManager:
         )
         # 可以考虑限制列表长度，例如只保留最近N次记录
         self.save_player_data(user_id, player_data)
+
+    def get_rank(self):
+        """
+        获取轮盘排行榜
+        返回列表，每个元素是一个字典，包含玩家ID、总得分
+        """
+        # 获取所有玩家数据
+        player_data_dir = os.path.join(self.data_dir, "player_data")
+        player_files = [f for f in os.listdir(player_data_dir) if f.endswith(".json")]
+
+        # 读取玩家数据并排序
+        players = []
+        for player_file in player_files:
+            with open(
+                os.path.join(player_data_dir, player_file), "r", encoding="utf-8"
+            ) as f:
+                player_data = json.load(f)
+                players.append(
+                    {
+                        "user_id": player_data["user_id"],
+                        "total_score": player_data["total_score"],
+                    }
+                )
+
+        # 按照分数从高到低排序
+        players.sort(key=lambda x: x["total_score"], reverse=True)
+
+        return players

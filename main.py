@@ -21,6 +21,7 @@ from app.scripts.GunRouletteGame.commands import (
     handle_start_roulette_game,
     handle_player_shoot,
     handle_admin_end_game,
+    handle_roulette_rank,
 )
 
 # 数据存储路径，实际开发时，请将GunRouletteGame替换为具体的数据存放路径
@@ -106,8 +107,11 @@ async def handle_group_message(websocket, msg):
             )
             return
 
-        # 新增：处理管理员结束游戏命令
-        if raw_message.lower() == "结束轮盘":
+        if raw_message == "轮盘排行":
+            await handle_roulette_rank(websocket, group_id, message_id)
+            return
+
+        if raw_message == "结束轮盘":
             if is_authorized_user:
                 await handle_admin_end_game(websocket, group_id, message_id)
             else:

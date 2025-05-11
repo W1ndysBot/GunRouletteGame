@@ -8,9 +8,24 @@ from app.scripts.GunRouletteGame.GameManager import (
     MIN_BET_AMOUNT,
     MAX_BET_AMOUNT,
 )
+from app.scripts.GunRouletteGame.DataManager import DataManager
 
 DEFAULT_BULLET_COUNT = 6
 DEFAULT_BET_AMOUNT = 1  # 默认押注点数
+
+
+async def handle_roulette_rank(websocket, group_id, message_id):
+    """处理轮盘排行榜命令"""
+    data_manager = DataManager(group_id)
+    rank_list = data_manager.get_rank()
+    rank_message = "轮盘排行榜\n"
+    rank_message += "-----------------\n"
+    for rank in rank_list:
+        rank_message += f"{rank}.{rank['user_id']}：{rank['total_score']}分\n"
+    try:
+        await send_group_msg(websocket, group_id, rank_message)
+    except Exception as e:
+        logging.error(f"处理轮盘排行榜命令失败: {e}")
 
 
 async def handle_roulette_menu(websocket, group_id, message_id):
