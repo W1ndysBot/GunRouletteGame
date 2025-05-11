@@ -61,7 +61,7 @@ class GameManager:
             return {"success": False, "message": "当前群组已有一场轮盘游戏正在进行中。"}
 
         # 2. 检查群组每日游戏上限
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today_str = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
         if self.data_manager.game_status.get("last_game_end_date") != today_str:
             self.data_manager.game_status["daily_games_ended_count"] = 0
             self.data_manager.game_status["last_game_end_date"] = today_str
@@ -268,7 +268,7 @@ class GameManager:
         if not game_data:  # 理论上不应发生，因为调用此函数前游戏应存在
             return {"summary": "错误：未找到当前游戏数据进行结算。"}
 
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(timezone(timedelta(hours=8))).isoformat()
         game_id = game_data["id"]
         bullet_count = game_data["bullet_count"]
         participants = game_data["participants"]
@@ -338,7 +338,7 @@ class GameManager:
         # 更新群组游戏状态
         self.data_manager.game_status["daily_games_ended_count"] += 1
         self.data_manager.game_status["last_game_end_date"] = datetime.now(
-            timezone.utc
+            timezone(timedelta(hours=8))
         ).strftime(
             "%Y-%m-%d"
         )  # 确保日期更新

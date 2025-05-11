@@ -1,7 +1,7 @@
 import os
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 class DataManager:
@@ -55,7 +55,9 @@ class DataManager:
         default_game_status = {
             "group_id": self.group_id,
             "daily_games_ended_count": 0,
-            "last_game_end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "last_game_end_date": datetime.now(timezone(timedelta(hours=8))).strftime(
+                "%Y-%m-%d"
+            ),
             "current_game": None,
         }
 
@@ -162,7 +164,7 @@ class DataManager:
     def record_player_game_initiation(self, user_id):
         player_data = self.get_player_data(user_id)
         player_data["games_initiated_timestamps"].append(
-            datetime.now(timezone.utc).isoformat()
+            datetime.now(timezone(timedelta(hours=8))).isoformat()
         )
         # 可以考虑限制列表长度，例如只保留最近N次记录
         self.save_player_data(user_id, player_data)
