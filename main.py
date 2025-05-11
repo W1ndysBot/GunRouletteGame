@@ -1,4 +1,4 @@
-# script/example/main.py
+# script/GunRouletteGame/main.py
 
 import logging
 import os
@@ -14,24 +14,25 @@ sys.path.append(
 from app.config import *
 from app.api import send_group_msg, send_private_msg
 from app.switch import load_switch, save_switch
+from app.scripts.GunRouletteGame.menu import Menu
+from app.scripts.GunRouletteGame.GameManager import GameManager
 
-
-# 数据存储路径，实际开发时，请将Example替换为具体的数据存放路径
+# 数据存储路径，实际开发时，请将GunRouletteGame替换为具体的数据存放路径
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "data",
-    "Example",
+    "GunRouletteGame",
 )
 
 
 # 查看功能开关状态
 def load_function_status(group_id):
-    return load_switch(group_id, "Example")
+    return load_switch(group_id, "GunRouletteGame")
 
 
 # 保存功能开关状态
 def save_function_status(group_id, status):
-    save_switch(group_id, "Example", status)
+    save_switch(group_id, "GunRouletteGame", status)
 
 
 # 处理开关状态
@@ -40,7 +41,7 @@ async def toggle_function_status(websocket, group_id, message_id, authorized):
         await send_group_msg(
             websocket,
             group_id,
-            f"[CQ:reply,id={message_id}]❌❌❌你没有权限对Example功能进行操作,请联系管理员。",
+            f"[CQ:reply,id={message_id}]❌❌❌你没有权限对GunRouletteGame功能进行操作,请联系管理员。",
         )
         return
 
@@ -49,12 +50,14 @@ async def toggle_function_status(websocket, group_id, message_id, authorized):
         await send_group_msg(
             websocket,
             group_id,
-            f"[CQ:reply,id={message_id}]🚫🚫🚫Example功能已关闭",
+            f"[CQ:reply,id={message_id}]🚫🚫🚫GunRouletteGame功能已关闭",
         )
     else:
         save_function_status(group_id, True)
         await send_group_msg(
-            websocket, group_id, f"[CQ:reply,id={message_id}]✅✅✅Example功能已开启"
+            websocket,
+            group_id,
+            f"[CQ:reply,id={message_id}]✅✅✅GunRouletteGame功能已开启",
         )
 
 
@@ -71,19 +74,56 @@ async def handle_group_message(websocket, msg):
         authorized = user_id in owner_id
 
         # 处理开关命令
-        if raw_message.lower() == "example":
+        if raw_message.lower() == "grg":
             await toggle_function_status(websocket, group_id, message_id, authorized)
             return
         # 检查功能是否开启
         if load_function_status(group_id):
-            # 其他群消息处理逻辑
-            pass
+            if raw_message.lower() == "轮盘菜单":
+                await send_group_msg(websocket, group_id, Menu().get_menu())
+                return
+            # 处理卷卷轮盘命令
+            if raw_message.startswith("卷卷轮盘"):
+                try:
+                    if len(raw_message.split(" ")) > 1 and raw_message.split(" ")[1]:
+                        bullet_count = int(raw_message.split(" ")[1])
+                except ValueError:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]️️️无效的子弹数量，将使用默认值6颗。",
+                    )
+                    bullet_count = 6  # 重置为默认值
+
+                # 实例化GameManager
+                game_manager = GameManager(group_id, bullet_count)
+                game_result = game_manager.start_game()
+                if game_result and game_result.get("success") == True:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]🔫🔫🔫卷卷轮盘游戏已开始，当前子弹数量为{bullet_count}颗，可以发送`卷卷开枪`命令参与游戏。",
+                    )
+                elif game_result:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]🚫🚫🚫开启卷卷轮盘游戏失败，失败原因："
+                        + game_result.get("message", "未知错误"),
+                    )
+                else:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]🚫🚫🚫开启卷卷轮盘游戏失败，无法获取游戏结果。",
+                    )
+                return
     except Exception as e:
-        logging.error(f"处理Example群消息失败: {e}")
+        logging.error(f"处理GunRouletteGame群消息失败: {e}")
         await send_group_msg(
             websocket,
             group_id,
-            "处理Example群消息失败，错误信息：" + str(e),
+            "处理GunRouletteGame群消息失败，错误信息：" + str(e),
         )
         return
 
@@ -98,11 +138,11 @@ async def handle_private_message(websocket, msg):
         # 私聊消息处理逻辑
         pass
     except Exception as e:
-        logging.error(f"处理Example私聊消息失败: {e}")
+        logging.error(f"处理GunRouletteGame私聊消息失败: {e}")
         await send_private_msg(
             websocket,
             msg.get("user_id"),
-            "处理Example私聊消息失败，错误信息：" + str(e),
+            "处理GunRouletteGame私聊消息失败，错误信息：" + str(e),
         )
         return
 
@@ -119,11 +159,11 @@ async def handle_group_notice(websocket, msg):
         operator_id = str(msg.get("operator_id", ""))
 
     except Exception as e:
-        logging.error(f"处理Example群通知失败: {e}")
+        logging.error(f"处理GunRouletteGame群通知失败: {e}")
         await send_group_msg(
             websocket,
             group_id,
-            "处理Example群通知失败，错误信息：" + str(e),
+            "处理GunRouletteGame群通知失败，错误信息：" + str(e),
         )
         return
 
@@ -137,11 +177,11 @@ async def handle_response(websocket, msg):
             # 回调处理逻辑
             pass
     except Exception as e:
-        logging.error(f"处理Example回调事件失败: {e}")
+        logging.error(f"处理GunRouletteGame回调事件失败: {e}")
         await send_group_msg(
             websocket,
             msg.get("group_id"),
-            f"处理Example回调事件失败，错误信息：{str(e)}",
+            f"处理GunRouletteGame回调事件失败，错误信息：{str(e)}",
         )
         return
 
@@ -153,7 +193,7 @@ async def handle_request_event(websocket, msg):
         request_type = msg.get("request_type")
         pass
     except Exception as e:
-        logging.error(f"处理Example请求事件失败: {e}")
+        logging.error(f"处理GunRouletteGame请求事件失败: {e}")
         return
 
 
@@ -199,7 +239,7 @@ async def handle_events(websocket, msg):
             "meta_event": "元事件",
         }.get(post_type, "未知")
 
-        logging.error(f"处理Example{error_type}事件失败: {e}")
+        logging.error(f"处理GunRouletteGame{error_type}事件失败: {e}")
 
         # 发送错误提示
         if post_type == "message":
@@ -208,11 +248,11 @@ async def handle_events(websocket, msg):
                 await send_group_msg(
                     websocket,
                     msg.get("group_id"),
-                    f"处理Example{error_type}事件失败，错误信息：{str(e)}",
+                    f"处理GunRouletteGame{error_type}事件失败，错误信息：{str(e)}",
                 )
             elif message_type == "private":
                 await send_private_msg(
                     websocket,
                     msg.get("user_id"),
-                    f"处理Example{error_type}事件失败，错误信息：{str(e)}",
+                    f"处理GunRouletteGame{error_type}事件失败，错误信息：{str(e)}",
                 )
