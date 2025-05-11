@@ -33,7 +33,7 @@ async def handle_roulette_rank(websocket, group_id, message_id):
     rank_message = "轮盘排行榜\n"
     rank_message += "-----------------\n"
     for i, rank in enumerate(rank_list, 1):
-        rank_message += f"{i}. [CQ:at,qq={rank['user_id']}]：{rank['total_score']}分\n"
+        rank_message += f"{i}.{rank['user_id']}：{rank['total_score']}分\n"
     try:
         await send_group_msg(websocket, group_id, rank_message)
     except Exception as e:
