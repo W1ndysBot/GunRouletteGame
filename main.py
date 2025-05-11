@@ -94,13 +94,13 @@ async def handle_group_message(websocket, msg):
             await handle_roulette_menu(websocket, group_id, message_id)
             return
 
-        if raw_message.startswith("卷卷轮盘"):
+        if raw_message.startswith("开始轮盘"):
             await handle_start_roulette_game(
                 websocket, group_id, user_id, raw_message, message_id
             )
             return
 
-        if raw_message.startswith("卷卷开枪"):
+        if raw_message.startswith("开枪"):
             await handle_player_shoot(
                 websocket, group_id, user_id, raw_message, message_id
             )
