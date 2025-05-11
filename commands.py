@@ -58,28 +58,35 @@ async def handle_start_roulette_game(
 ):
     """处理开始卷卷轮盘游戏命令"""
     bullet_count = DEFAULT_BULLET_COUNT
-    try:
-        parts = raw_message.split(" ")
-        if len(parts) > 1 and parts[1]:
-            try:
-                parsed_bullet_count = int(parts[1])
-                if parsed_bullet_count > 0:  # 确保子弹数大于0
-                    bullet_count = parsed_bullet_count
-                else:
-                    await send_group_msg(
-                        websocket,
-                        group_id,
-                        f"[CQ:reply,id={message_id}]️️️无效的子弹数量，必须为正整数，将使用默认值{DEFAULT_BULLET_COUNT}颗。",
-                    )
-            except ValueError:
+    command_keyword = "开始轮盘"
+
+    # 从原始消息中提取命令关键字后的参数部分
+    # 例如: "开始轮盘", "开始轮盘8", "开始轮盘 8"
+    # 移除 "开始轮盘" 前缀，并去除两端可能存在的空格
+    parameter_str = raw_message[len(command_keyword):].strip()
+
+    if parameter_str:  # 如果关键字 "开始轮盘" 之后有非空白内容
+        try:
+            parsed_bullet_count = int(parameter_str)
+            if parsed_bullet_count > 0:
+                bullet_count = parsed_bullet_count
+            else:
+                # 子弹数必须为正整数
                 await send_group_msg(
                     websocket,
                     group_id,
-                    f"[CQ:reply,id={message_id}]️️️无效的子弹数量，将使用默认值{DEFAULT_BULLET_COUNT}颗。",
+                    f"[CQ:reply,id={message_id}]无效的子弹数量，必须为正整数。将使用默认值 {DEFAULT_BULLET_COUNT} 颗。",
                 )
-    except Exception as e:
-        logging.warning(f"解析子弹数量时出错: {e}，将使用默认值。")
-        # bullet_count 保持默认值
+                # bullet_count 保持默认值 DEFAULT_BULLET_COUNT
+        except ValueError:
+            # 参数不是一个有效的整数 (例如 "abc", "8 abc")
+            await send_group_msg(
+                websocket,
+                group_id,
+                f"[CQ:reply,id={message_id}]无效的子弹数量格式，请输入纯数字。将使用默认值 {DEFAULT_BULLET_COUNT} 颗。",
+            )
+            # bullet_count 保持默认值 DEFAULT_BULLET_COUNT
+    # 如果 parameter_str 为空 (即命令仅为 "开始轮盘"), bullet_count 保持默认值 DEFAULT_BULLET_COUNT
 
     try:
         # 实例化GameManager，传入 initiator_id
