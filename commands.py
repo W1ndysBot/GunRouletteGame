@@ -110,24 +110,39 @@ async def handle_player_shoot(websocket, group_id, user_id, raw_message, message
     """处理玩家开枪命令"""
     bet_amount = DEFAULT_BET_AMOUNT  # 默认押注1点
     try:
-        parts = raw_message.split(" ")
-        if len(parts) > 1 and parts[1]:
-            try:
-                parsed_bet = int(parts[1])
-                if MIN_BET_AMOUNT <= parsed_bet <= MAX_BET_AMOUNT:
-                    bet_amount = parsed_bet
-                else:
+        command_keyword = "开枪"
+        # 确保消息以 "开枪" 开头，然后提取后续的参数
+        if raw_message.startswith(command_keyword):
+            potential_bet_str = raw_message[len(command_keyword) :].strip()
+
+            if potential_bet_str:  # 如果 "开枪" 后面有内容
+                try:
+                    parsed_bet = int(potential_bet_str)
+                    if MIN_BET_AMOUNT <= parsed_bet <= MAX_BET_AMOUNT:
+                        bet_amount = parsed_bet
+                    else:
+                        await send_group_msg(
+                            websocket,
+                            group_id,
+                            f"[CQ:reply,id={message_id}]️️️无效的押注点数，请输入 {MIN_BET_AMOUNT}-{MAX_BET_AMOUNT} 之间的整数，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
+                        )
+                        # bet_amount 保持为 DEFAULT_BET_AMOUNT
+                except ValueError:
                     await send_group_msg(
                         websocket,
                         group_id,
-                        f"[CQ:reply,id={message_id}]️️️无效的押注点数，请输入 {MIN_BET_AMOUNT}-{MAX_BET_AMOUNT} 之间的整数，将使用默认值 {bet_amount} 点。",
+                        f"[CQ:reply,id={message_id}]️️️无效的押注点数，请输入数字，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
                     )
-            except ValueError:
-                await send_group_msg(
-                    websocket,
-                    group_id,
-                    f"[CQ:reply,id={message_id}]️️️无效的押注点数，将使用默认值 {bet_amount} 点。",
-                )
+                    # bet_amount 保持为 DEFAULT_BET_AMOUNT
+            # else: 如果 potential_bet_str 为空，表示玩家只发送了 "开枪"，使用默认押注
+        else:
+            # 此情况理论上不应发生，因为 main.py 中有 startswith("开枪") 的判断
+            # 但为保险起见，记录一个警告，并使用默认押注
+            logging.warning(
+                f"handle_player_shoot 接收到非预期格式的消息: {raw_message}"
+            )
+            # bet_amount 保持为 DEFAULT_BET_AMOUNT
+
     except Exception as e:
         logging.warning(f"解析押注点数时出错: {e}，将使用默认值。")
         # bet_amount 保持默认值
