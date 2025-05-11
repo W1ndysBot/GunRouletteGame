@@ -52,7 +52,7 @@ async def toggle_function_status(websocket, group_id, message_id, authorized_use
     await send_group_msg(
         websocket,
         group_id,
-        f"[CQ:reply,id={message_id}]枪轮盘游戏功能已{status_text}。",
+        f"[CQ:reply,id={message_id}]轮盘游戏功能已{status_text}，发送 `轮盘菜单` 查看功能菜单玩法。",
     )
 
 
