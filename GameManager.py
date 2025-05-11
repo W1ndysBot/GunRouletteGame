@@ -107,8 +107,8 @@ class GameManager:
             if datetime.fromisoformat(t) > (now - timedelta(days=1))
         ]  # 清理一天前的记录
 
-        # 所有检查通过，开始新游戏
-        game_id = uuid.uuid4().hex
+        # 生成一个六位的唯一ID
+        game_id = "".join(random.choices("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=6))
         # fatal_bullet_position = random.randint(0, self.bullet_count - 1) # 不再需要固定致命子弹
 
         current_game_data = {
@@ -214,15 +214,17 @@ class GameManager:
             if game_data["shots_fired_count"] == game_data["bullet_count"]:
                 # 所有子弹打完，无人中弹
                 end_game_result = self._end_game(hit_player_id=None)
-                
+
                 # 根据子弹是否真的存在过来定制消息
-                if game_data.get("real_bullet_initially_present") and not game_data.get("is_bullet_fired_this_game"):
+                if game_data.get("real_bullet_initially_present") and not game_data.get(
+                    "is_bullet_fired_this_game"
+                ):
                     # 有子弹，但幸运躲过
                     safe_message = f"🎉 幸运至极！膛内的子弹躲过了所有 {game_data['bullet_count']} 次射击！"
                 elif not game_data.get("real_bullet_initially_present"):
                     # 开始就没子弹
                     safe_message = f"🎉 原来如此！所有 {game_data['bullet_count']} 个弹膛原本就是安全的！"
-                else: # 理论上这个分支不会到，因为如果 is_bullet_fired_this_game 是 True, is_hit 就该是 True
+                else:  # 理论上这个分支不会到，因为如果 is_bullet_fired_this_game 是 True, is_hit 就该是 True
                     safe_message = f"🎉 咔！是空枪！所有 {game_data['bullet_count']} 个弹膛均已安全射出！"
 
                 return {
@@ -238,10 +240,14 @@ class GameManager:
                 )
                 # 计算下一枪的中弹概率 (如果子弹还未被击发)
                 next_shot_probability_display = 0.0
-                if game_data.get("real_bullet_initially_present") and not game_data.get("is_bullet_fired_this_game"):
+                if game_data.get("real_bullet_initially_present") and not game_data.get(
+                    "is_bullet_fired_this_game"
+                ):
                     if game_data["bullet_count"] > 0:
-                        next_shot_probability_display = (1.0 / game_data["bullet_count"]) * 100
-                
+                        next_shot_probability_display = (
+                            1.0 / game_data["bullet_count"]
+                        ) * 100
+
                 probability_message = ""
                 if game_data.get("real_bullet_initially_present"):
                     if not game_data.get("is_bullet_fired_this_game"):
@@ -250,7 +256,6 @@ class GameManager:
                         probability_message = "\n子弹已被击发，后续将是安全的！"
                 else:
                     probability_message = "\n膛内无子弹，尽情射击吧！"
-
 
                 return {
                     "success": True,
