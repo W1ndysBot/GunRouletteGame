@@ -14,15 +14,7 @@ sys.path.append(
 from app.config import *
 from app.api import send_group_msg, send_private_msg, owner_id
 from app.switch import load_switch, save_switch
-from app.scripts.GunRouletteGame.menu import Menu
-from app.scripts.GunRouletteGame.GameManager import GameManager
-from app.scripts.GunRouletteGame.commands import (
-    handle_roulette_menu,
-    handle_start_roulette_game,
-    handle_player_shoot,
-    handle_admin_end_game,
-    handle_roulette_rank,
-)
+from app.scripts.GunRouletteGame.commands import *
 
 # 数据存储路径，实际开发时，请将GunRouletteGame替换为具体的数据存放路径
 DATA_DIR = os.path.join(
@@ -109,6 +101,10 @@ async def handle_group_message(websocket, msg):
 
         if raw_message == "轮盘排行":
             await handle_roulette_rank(websocket, group_id, message_id)
+            return
+
+        if raw_message == "我的轮盘":
+            await handle_my_roulette(websocket, group_id, user_id, message_id)
             return
 
         if raw_message == "结束轮盘":

@@ -14,6 +14,18 @@ DEFAULT_BULLET_COUNT = 6
 DEFAULT_BET_AMOUNT = 1  # 默认押注点数
 
 
+async def handle_my_roulette(websocket, group_id, user_id, message_id):
+    """处理我的轮盘命令"""
+    data_manager = DataManager(group_id)
+    my_roulette = data_manager.get_my_roulette(user_id)
+    message = f"[CQ:reply,id={message_id}]"
+    message += my_roulette
+    try:
+        await send_group_msg(websocket, group_id, message)
+    except Exception as e:
+        logging.error(f"处理我的轮盘命令失败: {e}")
+
+
 async def handle_roulette_rank(websocket, group_id, message_id):
     """处理轮盘排行榜命令"""
     data_manager = DataManager(group_id)
