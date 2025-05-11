@@ -118,6 +118,8 @@ class GameManager:
             "initiator_id": self.initiator_id,
             "bullet_count": self.bullet_count,  # 总弹巢数
             # "fatal_bullet_position": fatal_bullet_position,  # 移除
+            "real_bullet_initially_present": True,  # 默认游戏开始时有一颗子弹
+            "is_bullet_fired_this_game": False,  # 标记子弹是否已被击发
             "shots_fired_count": 0,  # 已开枪次数
             "participants": {},  # {user_id: {"bet": int, "shot_order": int, "is_hit": bool, "shot_time": "iso_timestamp"}}
         }
@@ -130,7 +132,7 @@ class GameManager:
 
         return {
             "success": True,
-            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个子弹，其中一颗是致命子弹。\n发送 `开枪 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
+            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个弹膛，膛内装有一颗子弹。每次开枪都会重新旋转！\n发送 `开枪 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
             "game_id": game_id,
             "bullet_count": self.bullet_count,
         }
@@ -179,44 +181,22 @@ class GameManager:
         }
 
         # 5. 判断是否命中
-        # 新规则：触发惩罚的概率 = 1 / (剩余空弹数 + 1)
-        # 剩余空弹数 = 总弹巢数 - 已开枪次数
-        # 所以概率是 1 / (game_data["bullet_count"] - game_data["shots_fired_count"] + 1)
-        # 但 README 的例子是：6 弹轮盘，第 1 人开枪概率 = 1/6，第 2 人 = 1/5
-        # 这对应于 概率 = 1 / (总弹巢数 - 已开枪次数)
-
-        # 第 k 枪 (shots_fired_count = k-1)
-        # 概率 = 1 / (bullet_count - shots_fired_count)
-
         is_hit = False
-        # shots_fired_count 是从0开始的，代表已经开了多少枪
-        # 所以当前是第 (shots_fired_count + 1) 枪
-        # 此时，剩余的"有效"位置（包括一个可能的中弹位置）是 bullet_count - shots_fired_count
+        if game_data.get("real_bullet_initially_present") and not game_data.get(
+            "is_bullet_fired_this_game"
+        ):
+            # 只有在初始有子弹且子弹本局未被击发时，才有概率命中
+            if game_data["bullet_count"] > 0:  # 避免除以零
+                hit_probability = 1.0 / game_data["bullet_count"]
+                if random.random() < hit_probability:
+                    is_hit = True
+                    game_data["is_bullet_fired_this_game"] = True  # 标记子弹已被击发
 
-        # 例如：6弹膛
-        # 第1枪 (shots_fired_count = 0): 剩余6个位置，中弹概率 1/6
-        # 第2枪 (shots_fired_count = 1): 剩余5个位置，中弹概率 1/5
-        # ...
-        # 第6枪 (shots_fired_count = 5): 剩余1个位置，中弹概率 1/1 (必中)
-
-        # 确保分母不为0
-        remaining_slots_for_random = (
-            game_data["bullet_count"] - game_data["shots_fired_count"]
-        )
-        if remaining_slots_for_random <= 0:  # 理论上不应该发生，除非子弹已打完还在尝试
-            # 这种情况应该在前面 shots_fired_count == bullet_count 时处理
-            pass  # 或者可以抛出异常/返回错误，表明逻辑问题
-
-        # random.random() 返回 [0.0, 1.0) 的浮点数
-        # 如果 random.random() < 1.0 / N, 则命中
-        if remaining_slots_for_random > 0:  # 只有在还有剩余槽位时才判断概率
-            hit_probability = 1.0 / remaining_slots_for_random
-            if random.random() < hit_probability:
-                is_hit = True
-                game_data["participants"][user_id]["is_hit"] = True
+        if is_hit:
+            game_data["participants"][user_id]["is_hit"] = True
 
         game_data["shots_fired_count"] += 1  # 无论是否命中，都增加已开枪次数
-        self.data_manager.save_game_status()  # 保存参与者和开枪次数的更新
+        self.data_manager.save_game_status()  # 保存参与者、开枪次数和子弹击发状态的更新
 
         if is_hit:
             # 玩家中弹，游戏结束
@@ -230,13 +210,24 @@ class GameManager:
             }
         else:
             # 未中弹
-            # 检查是否所有子弹都已安全射出
+            # 检查是否所有子弹都已安全射出 (即所有膛都打完了)
             if game_data["shots_fired_count"] == game_data["bullet_count"]:
                 # 所有子弹打完，无人中弹
-                end_game_result = self._end_game(hit_player_id=None)  # 无人中弹
+                end_game_result = self._end_game(hit_player_id=None)
+                
+                # 根据子弹是否真的存在过来定制消息
+                if game_data.get("real_bullet_initially_present") and not game_data.get("is_bullet_fired_this_game"):
+                    # 有子弹，但幸运躲过
+                    safe_message = f"🎉 幸运至极！膛内的子弹躲过了所有 {game_data['bullet_count']} 次射击！"
+                elif not game_data.get("real_bullet_initially_present"):
+                    # 开始就没子弹
+                    safe_message = f"🎉 原来如此！所有 {game_data['bullet_count']} 个弹膛原本就是安全的！"
+                else: # 理论上这个分支不会到，因为如果 is_bullet_fired_this_game 是 True, is_hit 就该是 True
+                    safe_message = f"🎉 咔！是空枪！所有 {game_data['bullet_count']} 个弹膛均已安全射出！"
+
                 return {
                     "success": True,
-                    "message": f"🎉 咔！是空枪！所有子弹均已安全射出！玩家 {user_id} (押注 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
+                    "message": f"{safe_message} 玩家 {user_id} (押注 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
                     "game_over": True,
                     "hit": False,
                     "details": end_game_result,
@@ -245,12 +236,25 @@ class GameManager:
                 remaining_shots_display = (
                     game_data["bullet_count"] - game_data["shots_fired_count"]
                 )
-                # 计算下一枪的中弹概率
-                next_shot_probability = 1.0 / remaining_shots_display
-                probability_percentage = next_shot_probability * 100
+                # 计算下一枪的中弹概率 (如果子弹还未被击发)
+                next_shot_probability_display = 0.0
+                if game_data.get("real_bullet_initially_present") and not game_data.get("is_bullet_fired_this_game"):
+                    if game_data["bullet_count"] > 0:
+                        next_shot_probability_display = (1.0 / game_data["bullet_count"]) * 100
+                
+                probability_message = ""
+                if game_data.get("real_bullet_initially_present"):
+                    if not game_data.get("is_bullet_fired_this_game"):
+                        probability_message = f"\n下一枪中弹概率（如果子弹还在）：{next_shot_probability_display:.1f}%"
+                    else:
+                        probability_message = "\n子弹已被击发，后续将是安全的！"
+                else:
+                    probability_message = "\n膛内无子弹，尽情射击吧！"
+
+
                 return {
                     "success": True,
-                    "message": f"咔！是空枪！玩家 {user_id} (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 发子弹，下一位请开枪！\n下一枪中弹概率：{probability_percentage:.1f}%",
+                    "message": f"咔！是空枪！玩家 {user_id} (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次射击机会。本轮盘总共 {game_data['bullet_count']} 个弹膛。{probability_message}",
                     "game_over": False,
                     "hit": False,
                 }
