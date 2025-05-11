@@ -210,5 +210,4 @@ class DataManager:
         message += f"总得分：{player_data['total_score']}\n"
         message += f"参与游戏次数：{len(player_data['games_participated_ids'])}\n"
         message += f"发起游戏次数：{len(player_data['games_initiated_timestamps'])}\n"
-        message += "-----------------\n"
         return message
