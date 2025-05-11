@@ -10,7 +10,7 @@ from app.scripts.GunRouletteGame.GameManager import (
 )
 from app.scripts.GunRouletteGame.DataManager import DataManager
 
-DEFAULT_BULLET_COUNT = 6
+DEFAULT_BULLET_COUNT = 4
 DEFAULT_BET_AMOUNT = 1  # 默认押注点数
 
 
@@ -33,7 +33,7 @@ async def handle_roulette_rank(websocket, group_id, message_id):
     rank_message = "轮盘排行榜\n"
     rank_message += "-----------------\n"
     for i, rank in enumerate(rank_list, 1):
-        rank_message += f"{i}. {rank['user_id']}：{rank['total_score']}分\n"
+        rank_message += f"{i}. [CQ:at,qq={rank['user_id']}]：{rank['total_score']}分\n"
     try:
         await send_group_msg(websocket, group_id, rank_message)
     except Exception as e:
@@ -63,7 +63,7 @@ async def handle_start_roulette_game(
     # 从原始消息中提取命令关键字后的参数部分
     # 例如: "开始轮盘", "开始轮盘8", "开始轮盘 8"
     # 移除 "开始轮盘" 前缀，并去除两端可能存在的空格
-    parameter_str = raw_message[len(command_keyword):].strip()
+    parameter_str = raw_message[len(command_keyword) :].strip()
 
     if parameter_str:  # 如果关键字 "开始轮盘" 之后有非空白内容
         try:

@@ -17,7 +17,7 @@ PLAYER_INITIATION_COOLDOWN_HOURS = 0
 # 最小押注点数
 MIN_BET_AMOUNT = 1
 # 最大押注点数
-MAX_BET_AMOUNT = 5
+MAX_BET_AMOUNT = 10
 # 默认子弹数
 DEFAULT_BULLET_COUNT = 4
 
@@ -203,7 +203,7 @@ class GameManager:
             end_game_result = self._end_game(hit_player_id=user_id)
             return {
                 "success": True,
-                "message": f"💥 BOOM! 玩家 {user_id} (押注 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
+                "message": f"💥 BOOM! 玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
                 "game_over": True,
                 "hit": True,
                 "details": end_game_result,
@@ -229,7 +229,7 @@ class GameManager:
 
                 return {
                     "success": True,
-                    "message": f"{safe_message} 玩家 {user_id} (押注 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
+                    "message": f"{safe_message} 玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
                     "game_over": True,
                     "hit": False,
                     "details": end_game_result,
@@ -259,7 +259,7 @@ class GameManager:
 
                 return {
                     "success": True,
-                    "message": f"咔！是空枪！玩家 {user_id} (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次射击机会。本轮盘总共 {game_data['bullet_count']} 个弹膛。{probability_message}",
+                    "message": f"咔！是空枪！玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次射击机会。本轮盘总共 {game_data['bullet_count']} 个弹膛。{probability_message}",
                     "game_over": False,
                     "hit": False,
                 }
@@ -295,12 +295,12 @@ class GameManager:
                 if pid == hit_player_id:
                     score_change = -1 * bullet_count * bet
                     outcome_summary_parts.append(
-                        f"玩家 {pid} 中弹，押注 {bet} 点，损失 {abs(score_change)} 分。"
+                        f"玩家 [CQ:at,qq={pid}] 中弹，押注 {bet} 点，损失 {abs(score_change)} 分。"
                     )
                 else:
                     score_change = 1 * bullet_count * bet
                     outcome_summary_parts.append(
-                        f"玩家 {pid} 安全，押注 {bet} 点，获得 {score_change} 分。"
+                        f"玩家 [CQ:at,qq={pid}] 安全，押注 {bet} 点，获得 {score_change} 分。"
                     )
                 score_changes[pid] = score_change
                 self.data_manager.update_player_score(pid, score_change)
