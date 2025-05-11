@@ -245,9 +245,12 @@ class GameManager:
                 remaining_shots_display = (
                     game_data["bullet_count"] - game_data["shots_fired_count"]
                 )
+                # 计算下一枪的中弹概率
+                next_shot_probability = 1.0 / remaining_shots_display
+                probability_percentage = next_shot_probability * 100
                 return {
                     "success": True,
-                    "message": f"咔！是空枪！玩家 {user_id} 安全。\n还有 {remaining_shots_display} 发子弹，下一位请开枪！",
+                    "message": f"咔！是空枪！玩家 {user_id} 安全。\n还有 {remaining_shots_display} 发子弹，下一位请开枪！\n下一枪中弹概率：{probability_percentage:.1f}%",
                     "game_over": False,
                     "hit": False,
                 }
