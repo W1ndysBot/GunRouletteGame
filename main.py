@@ -30,16 +30,6 @@ DATA_DIR = os.path.join(
     "GunRouletteGame",
 )
 
-# 插件信息
-plugin_name = "GunRouletteGame"
-plugin_usage = """
-发送 `grg` 打开/关闭本群轮盘游戏功能。
-发送 `轮盘菜单` 查看游戏帮助。
-发送 `卷卷轮盘 [子弹数]` 开始一局游戏 (默认6颗子弹)。
-发送 `卷卷开枪 [押注点数]` 参与当前游戏 (默认1点, 范围1-3点)。
-管理员发送 `结束轮盘` 可以手动结束当前局。
-"""
-
 
 # 查看功能开关状态
 def load_function_status(group_id):
@@ -58,7 +48,7 @@ async def toggle_function_status(websocket, group_id, message_id, authorized_use
         await send_group_msg(
             websocket,
             group_id,
-            f"[CQ:reply,id={message_id}]抱歉，您没有权限操作 {plugin_name} 功能开关。",
+            f"[CQ:reply,id={message_id}]抱歉，您没有权限操作 GunRouletteGame 功能开关。",
         )
         return
 
@@ -69,7 +59,7 @@ async def toggle_function_status(websocket, group_id, message_id, authorized_use
     await send_group_msg(
         websocket,
         group_id,
-        f"[CQ:reply,id={message_id}]{plugin_name} 功能已{status_text}。",
+        f"[CQ:reply,id={message_id}]枪轮盘游戏功能已{status_text}。",
     )
 
 
@@ -83,15 +73,7 @@ async def handle_group_message(websocket, msg):
         group_id = str(msg.get("group_id"))
         raw_message = str(msg.get("raw_message", "")).strip()
         message_id = str(msg.get("message_id"))
-        role = str(msg.get("sender", {}).get("role", "")).lower()  # 转小写以便比较
-
-        # 确保 user_id, group_id, message_id 存在
-        if not all([user_id, group_id, message_id]):
-            logging.warning(
-                f"[{plugin_name}] 缺少必要消息参数: user_id, group_id, or message_id."
-            )
-            return
-
+        role = str(msg.get("sender", {}).get("role", ""))
         is_authorized_user = user_id in owner_id or role in ["admin", "owner"]
 
         # 处理开关命令 (grg)
