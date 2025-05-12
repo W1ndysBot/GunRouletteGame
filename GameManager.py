@@ -251,7 +251,8 @@ class GameManager:
                 probability_message = ""
                 if game_data.get("real_bullet_initially_present"):
                     if not game_data.get("is_bullet_fired_this_game"):
-                        probability_message = f"\n下一枪中弹概率（如果子弹还在）：{next_shot_probability_display:.1f}%"
+                        # probability_message = f"\n下一枪中弹概率（如果子弹还在）：{next_shot_probability_display:.1f}%"
+                        pass
                     else:
                         probability_message = "\n子弹已被击发，后续将是安全的！"
                 else:
