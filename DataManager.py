@@ -193,8 +193,9 @@ class DataManager:
                     }
                 )
 
-        # 按照分数从高到低排序
+        # 按照分数从高到低排序，取前10名
         players.sort(key=lambda x: x["total_score"], reverse=True)
+        players = players[:10]
 
         return players
 
