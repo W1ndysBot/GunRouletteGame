@@ -10,5 +10,6 @@ class Menu:
         self.menu += "开枪+押注点数：参与一场轮盘游戏，默认押注1点\n"
         self.menu += "结束轮盘：结束一场轮盘游戏\n"
         self.menu += "轮盘排行：查看轮盘排行榜\n"
-        self.menu += "我的轮盘：查看我的轮盘信息"
+        self.menu += "我的轮盘：查看我的轮盘信息\n"
+        self.menu += "轮盘签到：每日签到获取积分"
         return self.menu

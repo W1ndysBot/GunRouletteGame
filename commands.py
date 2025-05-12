@@ -9,6 +9,7 @@ from app.scripts.GunRouletteGame.GameManager import (
     MAX_BET_AMOUNT,
 )
 from app.scripts.GunRouletteGame.DataManager import DataManager
+from app.scripts.GunRouletteGame.signin import SignIn
 
 DEFAULT_BULLET_COUNT = 4
 DEFAULT_BET_AMOUNT = 1  # 默认押注点数
@@ -249,4 +250,24 @@ async def handle_admin_end_game(websocket, group_id, message_id):
             websocket,
             group_id,
             f"[CQ:reply,id={message_id}] 🚫管理员结束游戏时发生内部错误: {str(e)}。",
+        )
+
+
+async def handle_roulette_signin(websocket, group_id, user_id, message_id):
+    """处理轮盘签到命令"""
+    try:
+
+        signin_manager = SignIn(group_id=group_id, user_id=user_id)
+        signin_result = signin_manager.perform_signin()
+
+        reply_message = f"[CQ:reply,id={message_id}]{signin_result.get('message', '签到处理时发生未知错误。')}"
+
+        await send_group_msg(websocket, group_id, reply_message)
+
+    except Exception as e:
+        logging.error(f"处理轮盘签到命令失败: {e}", exc_info=True)
+        await send_group_msg(
+            websocket,
+            group_id,
+            f"[CQ:reply,id={message_id}] 😥处理签到命令失败，发生内部错误: {str(e)}。",
         )

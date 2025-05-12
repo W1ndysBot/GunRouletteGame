@@ -118,6 +118,10 @@ async def handle_group_message(websocket, msg):
                 )
             return
 
+        if raw_message.lower() == "轮盘签到":
+            await handle_roulette_signin(websocket, group_id, user_id, message_id)
+            return
+
     except Exception as e:
         logging.error(f"处理GunRouletteGame群消息失败: {e}")
         await send_group_msg(
