@@ -308,28 +308,21 @@ class GameManager:
                 self.data_manager.record_player_game_participation(pid, game_id)
         else:  # 无人中弹
             outcome = "all_safe"
-            if participants:  # 只有当有参与者时才平分
-                total_pot = bullet_count * 10
-                # 如果参与人数为0，每人分0
-                score_per_player = (
-                    total_pot // len(participants) if len(participants) > 0 else 0
-                )
-
-                outcome_summary_parts.append(
-                    f"所有子弹安全射出！总奖池 {total_pot} 点，"
-                )
-                if score_per_player > 0:
-                    outcome_summary_parts.append(
-                        f"每位参与者获得 {score_per_player} 分。"
-                    )
-                else:
-                    outcome_summary_parts.append("但没有参与者瓜分奖池。")
-
+            if participants:  # 只有当有参与者时才进行计分和记录
+                # "本场轮盘结算：" 已由 outcome_summary_parts = ["本场轮盘结算："] 初始化
+                # 在循环中添加每个玩家的具体得分情况
                 for pid, p_data in participants.items():
-                    score_changes[pid] = score_per_player
-                    self.data_manager.update_player_score(pid, score_per_player)
+                    bet = p_data["bet"]
+                    # 当所有人都安全时，每个参与者根据其押注获得奖励
+                    # 奖励计算方式：子弹数 * 押注点数
+                    score_change = bullet_count * bet
+                    score_changes[pid] = score_change
+                    self.data_manager.update_player_score(pid, score_change)
                     self.data_manager.record_player_game_participation(pid, game_id)
-            else:
+                    outcome_summary_parts.append(
+                        f"玩家 [CQ:at,qq={pid}] 安全，押注 {bet} 点，获得 {score_change} 分。"
+                    )
+            else:  # 没有参与者
                 outcome_summary_parts.append("所有子弹安全射出！但没有玩家参与。")
 
         # 保存游戏历史
