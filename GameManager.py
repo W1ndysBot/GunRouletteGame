@@ -226,14 +226,15 @@ class GameManager:
                 # 清除存储的结果，避免重复使用
                 self._auto_start_next_game_result = None
 
-            end_game_result["next_game"] = next_game_info
+            # 创建包含end_game_result内容和next_game的新字典
+            result_with_next_game = {**end_game_result, "next_game": next_game_info}
 
             return {
                 "success": True,
                 "message": f"💥 BOOM! 玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
                 "game_over": True,
                 "hit": True,
-                "details": end_game_result,
+                "details": result_with_next_game,  # 使用新字典
             }
         else:
             # 未中弹
@@ -251,7 +252,8 @@ class GameManager:
                     # 清除存储的结果，避免重复使用
                     self._auto_start_next_game_result = None
 
-                end_game_result["next_game"] = next_game_info
+                # 创建包含end_game_result内容和next_game的新字典
+                result_with_next_game = {**end_game_result, "next_game": next_game_info}
 
                 # 根据子弹是否真的存在过来定制消息
                 if game_data.get("real_bullet_initially_present") and not game_data.get(
