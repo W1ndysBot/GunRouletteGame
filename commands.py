@@ -184,11 +184,15 @@ async def handle_player_shoot(websocket, group_id, user_id, raw_message, message
             message_to_send = f"{reply_message_base}{shoot_result.get('message')}"
             await send_group_msg(websocket, group_id, message_to_send)
 
-            # 如果游戏结束，可以考虑发送一个更详细的总结，或者已经在 shoot_result['message'] 中
-            # if shoot_result.get("game_over"):
-            #     details = shoot_result.get("details", {})
-            #     summary_message = details.get("summary", "游戏已结束。")
-            #     # await send_group_msg(websocket, group_id, f"本场游戏总结：\n{summary_message}")
+            # 如果游戏结束并自动开始了新游戏，发送新游戏开始消息
+            if shoot_result.get("game_over") and "details" in shoot_result:
+                game_details = shoot_result.get("details", {})
+                if "next_game" in game_details and game_details["next_game"].get(
+                    "success"
+                ):
+                    next_game_message = game_details["next_game"].get("message", "")
+                    if next_game_message:
+                        await send_group_msg(websocket, group_id, next_game_message)
 
         elif shoot_result:  # shoot_result 存在但 success 为 False
             await send_group_msg(
