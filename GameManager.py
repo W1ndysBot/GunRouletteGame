@@ -76,40 +76,36 @@ class GameManager:
             }
 
         # 3. 检查玩家发起游戏频率
-        if self.initiator_id != "0":  # 仅当非系统自动开启时检查
-            player_data = self.data_manager.get_player_data(self.initiator_id)
-            now = datetime.now(timezone.utc)
-            cooldown_limit_time = now - timedelta(
-                hours=PLAYER_INITIATION_COOLDOWN_HOURS
+        player_data = self.data_manager.get_player_data(self.initiator_id)
+        now = datetime.now(timezone.utc)
+        cooldown_limit_time = now - timedelta(hours=PLAYER_INITIATION_COOLDOWN_HOURS)
+
+        recent_initiations = [
+            t
+            for t in player_data.get("games_initiated_timestamps", [])
+            if datetime.fromisoformat(t) > cooldown_limit_time
+        ]
+        if recent_initiations:
+            # 计算最近一次发起游戏到现在的时间差，用于友好提示
+            last_init_time = datetime.fromisoformat(recent_initiations[-1])
+            time_since_last_init = now - last_init_time
+            remaining_cooldown = (
+                timedelta(hours=PLAYER_INITIATION_COOLDOWN_HOURS) - time_since_last_init
             )
 
-            recent_initiations = [
-                t
-                for t in player_data.get("games_initiated_timestamps", [])
-                if datetime.fromisoformat(t) > cooldown_limit_time
-            ]
-            if recent_initiations:
-                # 计算最近一次发起游戏到现在的时间差，用于友好提示
-                last_init_time = datetime.fromisoformat(recent_initiations[-1])
-                time_since_last_init = now - last_init_time
-                remaining_cooldown = (
-                    timedelta(hours=PLAYER_INITIATION_COOLDOWN_HOURS)
-                    - time_since_last_init
-                )
+            # 将 remaining_cooldown 转换为更易读的格式，例如 xx分xx秒
+            remaining_minutes = int(remaining_cooldown.total_seconds() // 60)
+            remaining_seconds = int(remaining_cooldown.total_seconds() % 60)
 
-                # 将 remaining_cooldown 转换为更易读的格式，例如 xx分xx秒
-                remaining_minutes = int(remaining_cooldown.total_seconds() // 60)
-                remaining_seconds = int(remaining_cooldown.total_seconds() % 60)
-
-                return {
-                    "success": False,
-                    "message": f"您发起游戏过于频繁，请在 {remaining_minutes}分{remaining_seconds}秒 后再试。",
-                }
-            player_data["games_initiated_timestamps"] = [
-                t
-                for t in player_data.get("games_initiated_timestamps", [])
-                if datetime.fromisoformat(t) > (now - timedelta(days=1))
-            ]  # 清理一天前的记录
+            return {
+                "success": False,
+                "message": f"您发起游戏过于频繁，请在 {remaining_minutes}分{remaining_seconds}秒 后再试。",
+            }
+        player_data["games_initiated_timestamps"] = [
+            t
+            for t in player_data.get("games_initiated_timestamps", [])
+            if datetime.fromisoformat(t) > (now - timedelta(days=1))
+        ]  # 清理一天前的记录
 
         # 生成一个六位的唯一ID
         game_id = "".join(random.choices("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=6))
@@ -131,22 +127,14 @@ class GameManager:
         self.data_manager.game_status["current_game"] = current_game_data
         self.data_manager.save_game_status()
 
-        # 记录玩家发起游戏的时间戳，仅当非系统自动开启时
-        if self.initiator_id != "0":
-            self.data_manager.record_player_game_initiation(self.initiator_id)
-
-        # 为系统自动开启的游戏返回不同的消息
-        if self.initiator_id == "0":
-            message = f"🔄 新一轮卷卷轮盘游戏已自动开始！\n总共 {self.bullet_count} 个弹膛，膛内装有一颗子弹。每次biu都会重新旋转！\n发送 `biu 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！"
-        else:
-            message = f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个弹膛，膛内装有一颗子弹。每次biu都会重新旋转！\n发送 `biu 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！"
+        # 记录玩家发起游戏的时间戳
+        self.data_manager.record_player_game_initiation(self.initiator_id)
 
         return {
             "success": True,
-            "message": message,
+            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个弹膛，膛内装有一颗子弹。每次biu都会重新旋转！\n发送 `biu 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
             "game_id": game_id,
             "bullet_count": self.bullet_count,
-            "auto_started": self.initiator_id == "0",  # 标记是否为自动开启
         }
 
     def player_shoot(self, user_id: str, bet_amount: int):
@@ -216,25 +204,12 @@ class GameManager:
         if is_hit:
             # 玩家中弹，游戏结束
             end_game_result = self._end_game(hit_player_id=user_id)
-            # 检查是否自动开始了新游戏
-            next_game_info = None
-            if (
-                hasattr(self, "_auto_start_next_game_result")
-                and self._auto_start_next_game_result
-            ):
-                next_game_info = self._auto_start_next_game_result
-                # 清除存储的结果，避免重复使用
-                self._auto_start_next_game_result = None
-
-            # 创建包含end_game_result内容和next_game的新字典
-            result_with_next_game = {**end_game_result, "next_game": next_game_info}
-
             return {
                 "success": True,
                 "message": f"💥 BOOM! 玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
                 "game_over": True,
                 "hit": True,
-                "details": result_with_next_game,  # 使用新字典
+                "details": end_game_result,
             }
         else:
             # 未中弹
@@ -242,18 +217,6 @@ class GameManager:
             if game_data["shots_fired_count"] == game_data["bullet_count"]:
                 # 所有子弹打完，无人中弹
                 end_game_result = self._end_game(hit_player_id=None)
-                # 检查是否自动开始了新游戏
-                next_game_info = None
-                if (
-                    hasattr(self, "_auto_start_next_game_result")
-                    and self._auto_start_next_game_result
-                ):
-                    next_game_info = self._auto_start_next_game_result
-                    # 清除存储的结果，避免重复使用
-                    self._auto_start_next_game_result = None
-
-                # 创建包含end_game_result内容和next_game的新字典
-                result_with_next_game = {**end_game_result, "next_game": next_game_info}
 
                 # 根据子弹是否真的存在过来定制消息
                 if game_data.get("real_bullet_initially_present") and not game_data.get(
@@ -391,9 +354,6 @@ class GameManager:
         self.data_manager.game_status["current_game"] = None
         self.data_manager.save_game_status()
 
-        # 自动开启下一场游戏
-        self._auto_start_next_game(bullet_count)
-
         summary = "\n".join(outcome_summary_parts)
         return {
             "game_id": game_id,
@@ -401,24 +361,6 @@ class GameManager:
             "scores": score_changes,
             "outcome": outcome,
         }
-
-    def _auto_start_next_game(self, bullet_count):
-        """
-        自动开启下一场游戏，设置发起者ID为"0"表示系统自动开启
-        """
-        # 保存当前initiator_id
-        original_initiator = self.initiator_id
-        # 将initiator_id设为"0"
-        self.initiator_id = "0"
-        # 保留相同的子弹数量
-        self.bullet_count = bullet_count
-        # 调用start_game开启新游戏
-        result = self.start_game()
-        # 存储结果，以便player_shoot可以获取
-        self._auto_start_next_game_result = result
-        # 恢复原始initiator_id
-        self.initiator_id = original_initiator
-        return result
 
     def admin_end_game(self):
         """
