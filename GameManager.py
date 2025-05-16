@@ -158,7 +158,10 @@ class GameManager:
 
         # 2. 检查玩家是否已biu
         if user_id in game_data["participants"]:
-            return {"success": False, "message": "您已经开过枪了，请等待本轮游戏结束。"}
+            return {
+                "success": False,
+                "message": "您已经开过biu了，请等待本轮游戏结束。",
+            }
 
         # 3. 验证押注点数
         try:
@@ -225,7 +228,7 @@ class GameManager:
                     # 开始就没子弹
                     safe_message = f"🎉 原来如此！所有 {game_data['bullet_count']} 个弹膛原本就是安全的！"
                 else:  # 理论上这个分支不会到，因为如果 is_bullet_fired_this_game 是 True, is_hit 就该是 True
-                    safe_message = f"🎉 咔！是空枪！所有 {game_data['bullet_count']} 个弹膛均已安全射出！"
+                    safe_message = f"🎉 咔！是空biu！所有 {game_data['bullet_count']} 个弹膛均已安全射出！"
 
                 return {
                     "success": True,
@@ -238,7 +241,7 @@ class GameManager:
                 remaining_shots_display = (
                     game_data["bullet_count"] - game_data["shots_fired_count"]
                 )
-                # 计算下一枪的中弹概率 (如果子弹还未被击发)
+                # 计算下一biu的中弹概率 (如果子弹还未被击发)
                 next_shot_probability_display = 0.0
                 if game_data.get("real_bullet_initially_present") and not game_data.get(
                     "is_bullet_fired_this_game"
@@ -251,7 +254,7 @@ class GameManager:
                 probability_message = ""
                 if game_data.get("real_bullet_initially_present"):
                     if not game_data.get("is_bullet_fired_this_game"):
-                        # probability_message = f"\n下一枪中弹概率（如果子弹还在）：{next_shot_probability_display:.1f}%"
+                        # probability_message = f"\n下一biu中弹概率（如果子弹还在）：{next_shot_probability_display:.1f}%"
                         pass
                     else:
                         probability_message = "\n子弹已被击发，后续将是安全的！"
@@ -260,7 +263,7 @@ class GameManager:
 
                 return {
                     "success": True,
-                    "message": f"咔！是空枪！玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次射击机会。本轮盘总共 {game_data['bullet_count']} 个弹膛。{probability_message}",
+                    "message": f"咔！是空biu！玩家 [CQ:at,qq={user_id}] (押注 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次射击机会。本轮盘总共 {game_data['bullet_count']} 个弹膛。{probability_message}",
                     "game_over": False,
                     "hit": False,
                 }
