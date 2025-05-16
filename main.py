@@ -93,7 +93,7 @@ async def handle_group_message(websocket, msg):
             )
             return
 
-        if raw_message.startswith("开枪"):
+        if raw_message.startswith("biu"):
             await handle_player_shoot(
                 websocket, group_id, user_id, raw_message, message_id
             )

@@ -45,7 +45,7 @@ class DataManager:
                 "bullet_count": 6,         # 当前游戏初始子弹数量 (总膛数)
                 "real_bullet_initially_present": True, # 游戏开始时是否真的有子弹
                 "is_bullet_fired_this_game": False,   # 本局游戏中子弹是否已被击发
-                "shots_fired_count": 0,    # 已开枪次数
+                "shots_fired_count": 0,    # 已biu次数
                 "participants": {          # 参与者信息 {user_id: {"bet": int, "shot_order": int, "is_hit": bool}}
                     # "player1_id": {"bet": 2, "shot_order": 0, "is_hit": False}
                 }

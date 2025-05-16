@@ -127,15 +127,15 @@ async def handle_start_roulette_game(
 
 
 async def handle_player_shoot(websocket, group_id, user_id, raw_message, message_id):
-    """处理玩家开枪命令"""
+    """处理玩家biu命令"""
     bet_amount = DEFAULT_BET_AMOUNT  # 默认押注1点
     try:
-        command_keyword = "开枪"
-        # 确保消息以 "开枪" 开头，然后提取后续的参数
+        command_keyword = "biu"
+        # 确保消息以 "biu" 开头，然后提取后续的参数
         if raw_message.startswith(command_keyword):
             potential_bet_str = raw_message[len(command_keyword) :].strip()
 
-            if potential_bet_str:  # 如果 "开枪" 后面有内容
+            if potential_bet_str:  # 如果 "biu" 后面有内容
                 try:
                     parsed_bet = int(potential_bet_str)
                     if MIN_BET_AMOUNT <= parsed_bet <= MAX_BET_AMOUNT:
@@ -154,9 +154,9 @@ async def handle_player_shoot(websocket, group_id, user_id, raw_message, message
                         f"[CQ:reply,id={message_id}]️️️无效的押注点数，请输入数字，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
                     )
                     # bet_amount 保持为 DEFAULT_BET_AMOUNT
-            # else: 如果 potential_bet_str 为空，表示玩家只发送了 "开枪"，使用默认押注
+            # else: 如果 potential_bet_str 为空，表示玩家只发送了 "biu"，使用默认押注
         else:
-            # 此情况理论上不应发生，因为 main.py 中有 startswith("开枪") 的判断
+            # 此情况理论上不应发生，因为 main.py 中有 startswith("biu") 的判断
             # 但为保险起见，记录一个警告，并使用默认押注
             logging.warning(
                 f"handle_player_shoot 接收到非预期格式的消息: {raw_message}"
@@ -168,7 +168,7 @@ async def handle_player_shoot(websocket, group_id, user_id, raw_message, message
         # bet_amount 保持默认值
 
     try:
-        # GameManager 需要 group_id 来加载正确的游戏状态，但不需要 initiator_id 和 bullet_count 进行开枪操作
+        # GameManager 需要 group_id 来加载正确的游戏状态，但不需要 initiator_id 和 bullet_count 进行biu操作
         # 可以在 GameManager 中直接从加载的 game_status 获取 bullet_count
         # 但为了保持一致性或未来可能的扩展，我们可以选择实例化一个新的GameManager对象
         # 或者，如果 GameManager 设计为单例或可重用，则可以直接调用方法
@@ -200,15 +200,15 @@ async def handle_player_shoot(websocket, group_id, user_id, raw_message, message
             await send_group_msg(
                 websocket,
                 group_id,
-                f"{reply_message_base}🚫开枪失败，无法获取游戏结果。",
+                f"{reply_message_base}🚫biu失败，无法获取游戏结果。",
             )
 
     except Exception as e:
-        logging.error(f"处理玩家开枪命令失败: {e}")
+        logging.error(f"处理玩家biu命令失败: {e}")
         await send_group_msg(
             websocket,
             group_id,
-            f"[CQ:reply,id={message_id}] 🚫处理开枪命令失败，发生内部错误: {str(e)}。",
+            f"[CQ:reply,id={message_id}] 🚫处理biu命令失败，发生内部错误: {str(e)}。",
         )
 
 

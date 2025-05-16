@@ -26,7 +26,7 @@ class GameManager:
     """
     游戏核心逻辑管理类。
 
-    负责处理游戏的开始、玩家开枪、游戏结束、计分等。
+    负责处理游戏的开始、玩家biu、游戏结束、计分等。
     """
 
     def __init__(
@@ -120,7 +120,7 @@ class GameManager:
             # "fatal_bullet_position": fatal_bullet_position,  # 移除
             "real_bullet_initially_present": True,  # 默认游戏开始时有一颗子弹
             "is_bullet_fired_this_game": False,  # 标记子弹是否已被击发
-            "shots_fired_count": 0,  # 已开枪次数
+            "shots_fired_count": 0,  # 已biu次数
             "participants": {},  # {user_id: {"bet": int, "shot_order": int, "is_hit": bool, "shot_time": "iso_timestamp"}}
         }
 
@@ -132,17 +132,17 @@ class GameManager:
 
         return {
             "success": True,
-            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个弹膛，膛内装有一颗子弹。每次开枪都会重新旋转！\n发送 `开枪 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
+            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个弹膛，膛内装有一颗子弹。每次biu都会重新旋转！\n发送 `biu 押注点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
             "game_id": game_id,
             "bullet_count": self.bullet_count,
         }
 
     def player_shoot(self, user_id: str, bet_amount: int):
         """
-        处理玩家开枪的逻辑。
+        处理玩家biu的逻辑。
 
         Args:
-            user_id (str): 开枪的玩家ID。
+            user_id (str): biu的玩家ID。
             bet_amount (int): 玩家的押注点数。
 
         Returns:
@@ -156,7 +156,7 @@ class GameManager:
         if not game_data or game_data.get("status") != "running":
             return {"success": False, "message": "当前没有正在进行的轮盘游戏。"}
 
-        # 2. 检查玩家是否已开枪
+        # 2. 检查玩家是否已biu
         if user_id in game_data["participants"]:
             return {"success": False, "message": "您已经开过枪了，请等待本轮游戏结束。"}
 
@@ -195,8 +195,8 @@ class GameManager:
         if is_hit:
             game_data["participants"][user_id]["is_hit"] = True
 
-        game_data["shots_fired_count"] += 1  # 无论是否命中，都增加已开枪次数
-        self.data_manager.save_game_status()  # 保存参与者、开枪次数和子弹击发状态的更新
+        game_data["shots_fired_count"] += 1  # 无论是否命中，都增加已biu次数
+        self.data_manager.save_game_status()  # 保存参与者、biu次数和子弹击发状态的更新
 
         if is_hit:
             # 玩家中弹，游戏结束
