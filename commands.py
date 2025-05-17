@@ -12,7 +12,7 @@ from app.scripts.GunRouletteGame.DataManager import DataManager
 from app.scripts.GunRouletteGame.signin import SignIn
 
 DEFAULT_BULLET_COUNT = 4
-DEFAULT_BET_AMOUNT = 1  # 默认押注点数
+DEFAULT_BET_AMOUNT = 1  # 默认置权点数
 
 
 async def handle_my_roulette(websocket, group_id, user_id, message_id):
@@ -128,7 +128,7 @@ async def handle_start_roulette_game(
 
 async def handle_player_shoot(websocket, group_id, user_id, raw_message, message_id):
     """处理玩家biu命令"""
-    bet_amount = DEFAULT_BET_AMOUNT  # 默认押注1点
+    bet_amount = DEFAULT_BET_AMOUNT  # 默认置权1点
     try:
         command_keyword = "biu"
         # 确保消息以 "biu" 开头，然后提取后续的参数
@@ -144,27 +144,27 @@ async def handle_player_shoot(websocket, group_id, user_id, raw_message, message
                         await send_group_msg(
                             websocket,
                             group_id,
-                            f"[CQ:reply,id={message_id}]️️️无效的押注点数，请输入 {MIN_BET_AMOUNT}-{MAX_BET_AMOUNT} 之间的整数，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
+                            f"[CQ:reply,id={message_id}]️️️无效的置权点数，请输入 {MIN_BET_AMOUNT}-{MAX_BET_AMOUNT} 之间的整数，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
                         )
                         # bet_amount 保持为 DEFAULT_BET_AMOUNT
                 except ValueError:
                     await send_group_msg(
                         websocket,
                         group_id,
-                        f"[CQ:reply,id={message_id}]️️️无效的押注点数，请输入数字，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
+                        f"[CQ:reply,id={message_id}]️️️无效的置权点数，请输入数字，将使用默认值 {DEFAULT_BET_AMOUNT} 点。",
                     )
                     # bet_amount 保持为 DEFAULT_BET_AMOUNT
-            # else: 如果 potential_bet_str 为空，表示玩家只发送了 "biu"，使用默认押注
+            # else: 如果 potential_bet_str 为空，表示玩家只发送了 "biu"，使用默认置权
         else:
             # 此情况理论上不应发生，因为 main.py 中有 startswith("biu") 的判断
-            # 但为保险起见，记录一个警告，并使用默认押注
+            # 但为保险起见，记录一个警告，并使用默认置权
             logging.warning(
                 f"handle_player_shoot 接收到非预期格式的消息: {raw_message}"
             )
             # bet_amount 保持为 DEFAULT_BET_AMOUNT
 
     except Exception as e:
-        logging.warning(f"解析押注点数时出错: {e}，将使用默认值。")
+        logging.warning(f"解析置权点数时出错: {e}，将使用默认值。")
         # bet_amount 保持默认值
 
     try:
