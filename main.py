@@ -56,9 +56,7 @@ async def toggle_function_status(websocket, group_id, message_id, authorized_use
     )
 
 
-BAN_GROUP_ID = [
-    "1234567890",
-]
+BAN_GROUP_ID = ["1234567890", "1046961227"]
 
 
 def is_ban_group(group_id):
