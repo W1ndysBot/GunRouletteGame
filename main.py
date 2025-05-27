@@ -56,6 +56,15 @@ async def toggle_function_status(websocket, group_id, message_id, authorized_use
     )
 
 
+BAN_GROUP_ID = [
+    "1234567890",
+]
+
+
+def is_ban_group(group_id):
+    return group_id in BAN_GROUP_ID
+
+
 # 群消息处理函数
 async def handle_group_message(websocket, msg):
     """处理群消息"""
@@ -84,26 +93,61 @@ async def handle_group_message(websocket, msg):
 
         # 功能已开启，处理游戏相关命令
         if raw_message.lower() == "轮盘菜单":
+            if is_ban_group(group_id):
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，该群组已禁止使用轮盘游戏功能，请前往1042934535专用群。",
+                )
+                return
             await handle_roulette_menu(websocket, group_id, message_id)
             return
 
         if raw_message.startswith("开始轮盘"):
+            if is_ban_group(group_id):
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，该群组已禁止使用轮盘游戏功能，请前往1042934535专用群。",
+                )
+                return
             await handle_start_roulette_game(
                 websocket, group_id, user_id, raw_message, message_id
             )
             return
 
         if raw_message.startswith("biu"):
+            if is_ban_group(group_id):
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，该群组已禁止使用轮盘游戏功能，请前往1042934535专用群。",
+                )
+                return
             await handle_player_shoot(
                 websocket, group_id, user_id, raw_message, message_id
             )
             return
 
         if raw_message == "轮盘排行":
+            if is_ban_group(group_id):
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，该群组已禁止使用轮盘游戏功能，请前往1042934535专用群。",
+                )
+                return
             await handle_roulette_rank(websocket, group_id, message_id)
             return
 
         if raw_message == "我的轮盘":
+            if is_ban_group(group_id):
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，该群组已禁止使用轮盘游戏功能，请前往1042934535专用群。",
+                )
+                return
             await handle_my_roulette(websocket, group_id, user_id, message_id)
             return
 
@@ -119,6 +163,13 @@ async def handle_group_message(websocket, msg):
             return
 
         if raw_message.lower() == "轮盘签到":
+            if is_ban_group(group_id):
+                await send_group_msg(
+                    websocket,
+                    group_id,
+                    f"[CQ:reply,id={message_id}]抱歉，该群组已禁止使用轮盘游戏功能，请前往1042934535专用群。",
+                )
+                return
             await handle_roulette_signin(websocket, group_id, user_id, message_id)
             return
 

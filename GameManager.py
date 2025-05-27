@@ -18,7 +18,7 @@ PLAYER_INITIATION_COOLDOWN_HOURS = 0
 MIN_BET_AMOUNT = 1
 # 最大置权点数
 MAX_BET_AMOUNT = 10
-# 默认子弹数
+# 默认biubiu数
 DEFAULT_BULLET_COUNT = 4
 
 
@@ -38,11 +38,11 @@ class GameManager:
         Args:
             group_id (str): 群组ID。
             initiator_id (str): 游戏发起者ID。
-            bullet_count (int): 轮盘的总子弹数量 (即子弹数)。
+            bullet_count (int): 轮盘的总biubiu数量 (即biubiu数)。
         """
         self.group_id = str(group_id)
         self.initiator_id = str(initiator_id)
-        self.bullet_count = max(1, int(bullet_count))  # 确保子弹数至少为1
+        self.bullet_count = max(1, int(bullet_count))  # 确保biubiu数至少为1
         self.data_manager = DataManager(group_id=self.group_id)
 
     def start_game(self):
@@ -109,7 +109,7 @@ class GameManager:
 
         # 生成一个六位的唯一ID
         game_id = "".join(random.choices("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=6))
-        # fatal_bullet_position = random.randint(0, self.bullet_count - 1) # 不再需要固定致命子弹
+        # fatal_bullet_position = random.randint(0, self.bullet_count - 1) # 不再需要固定致命biubiu
 
         current_game_data = {
             "id": game_id,
@@ -118,8 +118,8 @@ class GameManager:
             "initiator_id": self.initiator_id,
             "bullet_count": self.bullet_count,  # 总弹巢数
             # "fatal_bullet_position": fatal_bullet_position,  # 移除
-            "real_bullet_initially_present": True,  # 默认游戏开始时有一颗子弹
-            "is_bullet_fired_this_game": False,  # 标记子弹是否已被击发
+            "real_bullet_initially_present": True,  # 默认游戏开始时有一颗biubiu
+            "is_bullet_fired_this_game": False,  # 标记biubiu是否已被击发
             "shots_fired_count": 0,  # 已biu次数
             "participants": {},  # {user_id: {"bet": int, "shot_order": int, "is_hit": bool, "shot_time": "iso_timestamp"}}
         }
@@ -132,7 +132,7 @@ class GameManager:
 
         return {
             "success": True,
-            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个容器，膛内装有一颗子弹。每次biu都会重新旋转！\n发送 `biu 置权点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
+            "message": f"🔫🔫🔫 卷卷轮盘游戏已开始！\n总共 {self.bullet_count} 个容器，容器内装有一颗biubiu。每次biu都会重新旋转！\n发送 `biu 置权点数` (1-{MAX_BET_AMOUNT}点) 来参与游戏！",
             "game_id": game_id,
             "bullet_count": self.bullet_count,
         }
@@ -188,18 +188,18 @@ class GameManager:
         if game_data.get("real_bullet_initially_present") and not game_data.get(
             "is_bullet_fired_this_game"
         ):
-            # 只有在初始有子弹且子弹本局未被击发时，才有概率命中
+            # 只有在初始有biubiu且biubiu本局未被击发时，才有概率命中
             if game_data["bullet_count"] > 0:  # 避免除以零
                 hit_probability = 1.0 / game_data["bullet_count"]
                 if random.random() < hit_probability:
                     is_hit = True
-                    game_data["is_bullet_fired_this_game"] = True  # 标记子弹已被击发
+                    game_data["is_bullet_fired_this_game"] = True  # 标记biubiu已被击发
 
         if is_hit:
             game_data["participants"][user_id]["is_hit"] = True
 
         game_data["shots_fired_count"] += 1  # 无论是否命中，都增加已biu次数
-        self.data_manager.save_game_status()  # 保存参与者、biu次数和子弹击发状态的更新
+        self.data_manager.save_game_status()  # 保存参与者、biu次数和biubiu击发状态的更新
 
         if is_hit:
             # 玩家中弹，游戏结束
@@ -213,19 +213,19 @@ class GameManager:
             }
         else:
             # 未中弹
-            # 检查是否所有子弹都已安全射出 (即所有膛都打完了)
+            # 检查是否所有biubiu都已安全射出 (即所有容器都打完了)
             if game_data["shots_fired_count"] == game_data["bullet_count"]:
-                # 所有子弹打完，无人中弹
+                # 所有biubiu打完，无人中弹
                 end_game_result = self._end_game(hit_player_id=None)
 
-                # 根据子弹是否真的存在过来定制消息
+                # 根据biubiu是否真的存在过来定制消息
                 if game_data.get("real_bullet_initially_present") and not game_data.get(
                     "is_bullet_fired_this_game"
                 ):
-                    # 有子弹，但幸运躲过
-                    safe_message = f"🎉 幸运至极！膛内的子弹躲过了所有 {game_data['bullet_count']} 次biu！"
+                    # 有biubiu，但幸运躲过
+                    safe_message = f"🎉 幸运至极！容器内的biubiu躲过了所有 {game_data['bullet_count']} 次biu！"
                 elif not game_data.get("real_bullet_initially_present"):
-                    # 开始就没子弹
+                    # 开始就没biubiu
                     safe_message = f"🎉 原来如此！所有 {game_data['bullet_count']} 个容器原本就是安全的！"
                 else:  # 理论上这个分支不会到，因为如果 is_bullet_fired_this_game 是 True, is_hit 就该是 True
                     safe_message = f"🎉 咔！是空biu！所有 {game_data['bullet_count']} 个容器均已安全射出！"
@@ -241,7 +241,7 @@ class GameManager:
                 remaining_shots_display = (
                     game_data["bullet_count"] - game_data["shots_fired_count"]
                 )
-                # 计算下一biu的中弹概率 (如果子弹还未被击发)
+                # 计算下一biu的中弹概率 (如果biubiu还未被击发)
                 next_shot_probability_display = 0.0
                 if game_data.get("real_bullet_initially_present") and not game_data.get(
                     "is_bullet_fired_this_game"
@@ -254,12 +254,12 @@ class GameManager:
                 probability_message = ""
                 if game_data.get("real_bullet_initially_present"):
                     if not game_data.get("is_bullet_fired_this_game"):
-                        # probability_message = f"\n下一biu中弹概率（如果子弹还在）：{next_shot_probability_display:.1f}%"
+                        # probability_message = f"\n下一biu中弹概率（如果biubiu还在）：{next_shot_probability_display:.1f}%"
                         pass
                     else:
-                        probability_message = "\n子弹已被击发，后续将是安全的！"
+                        probability_message = "\nbiubiu已被击发，后续将是安全的！"
                 else:
-                    probability_message = "\n膛内无子弹，尽情biu吧！"
+                    probability_message = "\n容器内无biubiu，尽情biu吧！"
 
                 return {
                     "success": True,
@@ -317,7 +317,7 @@ class GameManager:
                 for pid, p_data in participants.items():
                     bet = p_data["bet"]
                     # 当所有人都安全时，每个参与者根据其置权获得奖励
-                    # 奖励计算方式：子弹数 * 置权点数
+                    # 奖励计算方式：biubiu数 * 置权点数
                     score_change = bullet_count * bet
                     score_changes[pid] = score_change
                     self.data_manager.update_player_score(pid, score_change)
@@ -326,7 +326,7 @@ class GameManager:
                         f"玩家 [CQ:at,qq={pid}] 安全，置权 {bet} 点，获得 {score_change} 分。"
                     )
             else:  # 没有参与者
-                outcome_summary_parts.append("所有子弹安全射出！但没有玩家参与。")
+                outcome_summary_parts.append("所有biubiu安全射出！但没有玩家参与。")
 
         # 保存游戏历史
         history_data = {

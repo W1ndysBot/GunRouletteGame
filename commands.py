@@ -72,11 +72,11 @@ async def handle_start_roulette_game(
             if parsed_bullet_count > 0:
                 bullet_count = parsed_bullet_count
             else:
-                # 子弹数必须为正整数
+                # biubiu数必须为正整数
                 await send_group_msg(
                     websocket,
                     group_id,
-                    f"[CQ:reply,id={message_id}]无效的子弹数量，必须为正整数。将使用默认值 {DEFAULT_BULLET_COUNT} 颗。",
+                    f"[CQ:reply,id={message_id}]无效的biubiu数量，必须为正整数。将使用默认值 {DEFAULT_BULLET_COUNT} 颗。",
                 )
                 # bullet_count 保持默认值 DEFAULT_BULLET_COUNT
         except ValueError:
@@ -84,7 +84,7 @@ async def handle_start_roulette_game(
             await send_group_msg(
                 websocket,
                 group_id,
-                f"[CQ:reply,id={message_id}]无效的子弹数量格式，请输入纯数字。将使用默认值 {DEFAULT_BULLET_COUNT} 颗。",
+                f"[CQ:reply,id={message_id}]无效的biubiu数量格式，请输入纯数字。将使用默认值 {DEFAULT_BULLET_COUNT} 颗。",
             )
             # bullet_count 保持默认值 DEFAULT_BULLET_COUNT
     # 如果 parameter_str 为空 (即命令仅为 "开始轮盘"), bullet_count 保持默认值 DEFAULT_BULLET_COUNT
