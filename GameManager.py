@@ -206,7 +206,7 @@ class GameManager:
             end_game_result = self._end_game(hit_player_id=user_id)
             return {
                 "success": True,
-                "message": f"💥 BOOM! 玩家 [CQ:at,qq={user_id}] (置权 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
+                "message": f"💥 BOOM! 玩家 [CQ:at,qq={user_id}]({user_id}) (置权 {bet_amount} 点) 不幸中弹！💀\n{end_game_result['summary']}",
                 "game_over": True,
                 "hit": True,
                 "details": end_game_result,
@@ -232,7 +232,7 @@ class GameManager:
 
                 return {
                     "success": True,
-                    "message": f"{safe_message} 玩家 [CQ:at,qq={user_id}] (置权 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
+                    "message": f"{safe_message} 玩家 [CQ:at,qq={user_id}]({user_id}) (置权 {bet_amount} 点) 安全。\n{end_game_result['summary']}",
                     "game_over": True,
                     "hit": False,
                     "details": end_game_result,
@@ -263,7 +263,7 @@ class GameManager:
 
                 return {
                     "success": True,
-                    "message": f"咔！是空biu！玩家 [CQ:at,qq={user_id}] (置权 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次biu机会。本轮盘总共 {game_data['bullet_count']} 个容器。{probability_message}",
+                    "message": f"咔！是空biu！玩家 [CQ:at,qq={user_id}]({user_id}) (置权 {bet_amount} 点) 安全。\n还有 {remaining_shots_display} 次biu机会。本轮盘总共 {game_data['bullet_count']} 个容器。{probability_message}",
                     "game_over": False,
                     "hit": False,
                 }

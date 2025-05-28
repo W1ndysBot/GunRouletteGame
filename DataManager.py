@@ -205,7 +205,7 @@ class DataManager:
         """
         player_data = self.get_player_data(user_id)
         # 解析数据，拼接为字符串
-        message = f"玩家 [CQ:at,qq={user_id}] 的轮盘信息：\n"
+        message = f"玩家 [CQ:at,qq={user_id}]({user_id}) 的轮盘信息：\n"
         message += "-----------------\n"
         message += f"总得分：{player_data['total_score']}\n"
         message += f"参与游戏次数：{len(player_data['games_participated_ids'])}\n"
